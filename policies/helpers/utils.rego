@@ -1,0 +1,150 @@
+package helpers
+
+# Path validation
+# Checks for unsafe paths: absolute paths, home directory, path traversal, /tmp.
+# When a resolved (workspace-relative) form exists in input.resolved_paths, that is
+# checked instead of the original so that absolute workspace paths pass safely.
+# Words the shell expands ($HOME, ${R}, "$X/y") are never safe: the policy
+# cannot see the value (e.g. $HOME/.aws/credentials). A literal $, as in
+# grep 'end$', is not an expansion; neither is a variable assigned earlier in
+# the same command, which the parser substitutes. /dev/null is always safe.
+
+has_shell_expansion(path) if input.expanded_words[path]
+
+is_safe_path("/dev/null") if not has_shell_expansion("/dev/null")
+
+is_safe_path(path) if {
+	not has_shell_expansion(path)
+	resolved := input.resolved_paths[path]
+	not startswith(resolved, "/")
+	not startswith(resolved, "~")
+	not contains(resolved, "../")
+	not contains(resolved, "/..")
+	resolved != ".."
+	not startswith(resolved, "/tmp")
+}
+
+is_safe_path(path) if {
+	not has_shell_expansion(path)
+	not input.resolved_paths[path]
+	not startswith(path, "/")
+	not startswith(path, "~")
+	not contains(path, "../")
+	not contains(path, "/..")
+	path != ".."
+	not startswith(path, "/tmp")
+}
+
+# Localhost URL validation - defensive against subdomain attacks
+# Accepts ONLY: localhost, 127.x.x.x, ::1 as the actual hostname
+# Rejects: localhost.evil.com, 127.0.0.1.evil.com, evil.com/localhost, etc.
+
+# A scheme only counts at the start: localhost?next=http://x has none
+has_url_scheme(url) if regex.match(`^[A-Za-z][A-Za-z0-9+.-]*://`, url)
+
+# A URL may still carry its shell quotes, so trim them first
+is_localhost_url(url) if {
+	unquoted := trim(url, "\"'")
+	has_url_scheme(unquoted)
+	is_localhost_schemed_url(unquoted)
+}
+
+# curl accepts URLs without a scheme (e.g. localhost:8123/path) and uses http
+is_localhost_url(url) if {
+	unquoted := trim(url, "\"'")
+	not has_url_scheme(unquoted)
+	is_localhost_schemed_url(concat("", ["http://", unquoted]))
+}
+
+# Helper to check if URL matches localhost exactly (not subdomain)
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://localhost: (with port)
+	contains(base_url, "://localhost:")
+}
+
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://localhost/ (with path)
+	contains(base_url, "://localhost/")
+}
+
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://localhost at end (no port, no path)
+	endswith(base_url, "://localhost")
+}
+
+# Helper to check if URL matches 127.x.x.x exactly (not subdomain)
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://127.: (with port) and ensure it ends with : or /
+	contains(base_url, "://127.")
+
+	# Extract part after ://
+	scheme_parts := split(base_url, "://")
+	count(scheme_parts) == 2
+	host_part := scheme_parts[1]
+
+	# Must start with 127.
+	startswith(host_part, "127.")
+
+	# Must be followed by port or path (not subdomain)
+	# Split by / to get host:port part
+	path_parts := split(host_part, "/")
+	host_and_port := path_parts[0]
+
+	# Split by : to check for subdomain attack
+	# Valid: 127.0.0.1:8080 -> no dots after first segment
+	# Invalid: 127.0.0.1.evil.com -> dots after
+	colon_parts := split(host_and_port, ":")
+
+	# If there's a colon, everything before it should be 127.x.x.x
+	# If no colon, the whole thing should be 127.x.x.x
+	# Count dots in the host part (before colon)
+	ip_part := colon_parts[0]
+
+	# Valid 127.x.x.x has exactly 3 dots, nothing more
+	not contains(ip_part, "..") # no double dots
+	count(split(ip_part, ".")) == 4 # exactly 4 octets
+}
+
+# Helper to check if URL matches [::1] exactly
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://[::1]: (with port)
+	contains(base_url, "://[::1]:")
+}
+
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://[::1]/ (with path)
+	contains(base_url, "://[::1]/")
+}
+
+is_localhost_schemed_url(url) if {
+	# Remove query params first
+	parts := split(url, "?")
+	base_url := parts[0]
+
+	# Check for ://[::1] at end
+	endswith(base_url, "://[::1]")
+}

@@ -1,0 +1,32 @@
+# Tenant settings: the top of the Tempa tree. See README.md for the layout and how to change things.
+id: example # must be your Tempa tenant id: an upload with another id is refused at publish
+name: Example
+default_node: platform # profile for users and repos that match no other node
+profile_ttl: 7d # how long a signed profile stays valid offline
+retention_days: { events: 90, aggregates: 396 }
+# Roles come from identity-provider groups (Entra security group object ids). Add yours before you rely on
+# them: as soon as a config with groups is live, the tenant's bootstrap admins are no longer platform owners,
+# so put yourself in the platform_owner group first. Membership must be direct, not through a nested group.
+# groups:
+#   - { id: 00000000-0000-0000-0000-000000000000, role: platform_owner } # your platform team
+#   - { id: 00000000-0000-0000-0000-000000000000, role: standards_owner } # who owns the standards
+#   - { id: 00000000-0000-0000-0000-000000000000, role: auditor }
+settings:
+  standards: { mode: extendable, add: [git-and-pr, security-basics, testing, api-design, code-quality] }
+  skills: { mode: extendable, add: [tdd-workflow, bugfix-workflow, pr-description, merge-when-green] }
+  policies: { mode: locked, bundles: [universal] }
+  default_decision: { mode: locked, value: allow }
+  allow_external_mcp: { mode: locked, value: true } # MCP servers from other providers, see security-basics
+  telemetry: { mode: locked, value: true }
+  log_prompts: { mode: open, value: false } # off unless a lower level opts in
+  sync_interval: { mode: open, value: 15m }
+  # MCP endpoints: add a file per endpoint under mcp/ and switch it on here, for example
+  # mcp: { mode: extendable, add: [docs] }
+  # How the CLI recognises the issue or story you work on, besides GitHub, GitLab, Jira, Linear and Azure DevOps
+  # URLs (built in). Only the reference leaves the laptop. For example:
+  # work_references:
+  #   mode: open
+  #   value:
+  #     - { tracker: proj, pattern: "\\bPROJ-\\d+\\b", url: "https://github.com/your-org/your-repo/issues?q=%22{key}%22" }
+  # Work board: team level until a team has a DPIA (data protection impact assessment) and agreed to names.
+  work_board: { mode: open, value: { visibility: team } }

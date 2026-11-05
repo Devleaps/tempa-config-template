@@ -1,0 +1,6 @@
+kind: opco
+id: acme
+name: Acme
+# An operating company. Give it its own folder per team below; nesting is the tree.
+# groups:
+#   - { id: 00000000-0000-0000-0000-000000000000, role: node_admin } # the opco's admins

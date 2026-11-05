@@ -1,0 +1,492 @@
+package universal
+
+import data.helpers
+
+# File operation commands with safe path validation
+# Commands: cat, chmod, cp, cut, diff, du, ls, mkdir, sed, sort, tail, head
+
+# Helper to check if all arguments are safe paths
+all_args_safe(args) if {
+	count(args) == 0
+}
+
+all_args_safe(args) if {
+	count(args) > 0
+	every arg in args {
+		helpers.is_safe_path(arg)
+	}
+}
+
+# Helper to check if all arguments and option values are safe paths
+# This handles commands like "wc -l file.txt" where file.txt is in options
+# Both arguments AND option values must be safe - a command with an unsafe
+# positional path must not be allowed just because its option values happen
+# to be safe (and vice versa).
+all_args_and_options_safe if {
+	every arg in input.parsed.arguments {
+		helpers.is_safe_path(arg)
+	}
+	every _, value in input.parsed.options {
+		helpers.is_safe_path(value)
+	}
+	repeated_option_values_safe
+}
+
+# Earlier values of an option given more than once (cat -n x -n y)
+repeated_option_values_safe if {
+	every _, values in input.parsed.repeated_options {
+		every value in values {
+			helpers.is_safe_path(value)
+		}
+	}
+}
+
+# Allow cat with safe paths
+decisions[decision] if {
+	input.parsed.executable == "cat"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny cat with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "cat"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "cat: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow chmod with safe paths
+decisions[decision] if {
+	input.parsed.executable == "chmod"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny chmod with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "chmod"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "chmod: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp). Modifying permissions on system files or sensitive directories is not allowed.",
+	}
+}
+
+# Allow cp with safe paths
+decisions[decision] if {
+	input.parsed.executable == "cp"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny cp with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "cp"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "cp: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow cut with safe paths
+decisions[decision] if {
+	input.parsed.executable == "cut"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny cut with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "cut"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "cut: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow diff with safe paths
+decisions[decision] if {
+	input.parsed.executable == "diff"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny diff with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "diff"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "diff: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow du with safe paths
+decisions[decision] if {
+	input.parsed.executable == "du"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny du with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "du"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "du: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow ls with safe paths
+decisions[decision] if {
+	input.parsed.executable == "ls"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny ls with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "ls"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "ls: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow mkdir with safe paths
+decisions[decision] if {
+	input.parsed.executable == "mkdir"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny mkdir with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "mkdir"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "mkdir: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow sed with safe paths
+decisions[decision] if {
+	input.parsed.executable == "sed"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny sed with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "sed"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "sed: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow sort with safe paths
+decisions[decision] if {
+	input.parsed.executable == "sort"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny sort with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "sort"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "sort: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow tail with safe paths
+decisions[decision] if {
+	input.parsed.executable == "tail"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny tail with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "tail"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "tail: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# Allow head with safe paths
+decisions[decision] if {
+	input.parsed.executable == "head"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+# Deny head with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "head"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "head: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# grep - allow with safe paths, deny with unsafe paths
+decisions[decision] if {
+	input.parsed.executable == "grep"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "grep"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "grep: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "lsof"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "pkill"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "ps"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "pwd"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "echo"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "nslookup"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "pytest"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "tflint"
+	decision := {"action": "allow"}
+}
+
+# opa test - allow policy testing
+decisions[decision] if {
+	input.parsed.executable == "opa"
+	count(input.parsed.arguments) > 0
+	input.parsed.arguments[0] == "test"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "which"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "whoami"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "df"
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "true"
+	decision := {"action": "allow"}
+}
+
+# mv - move/rename files (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "mv"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "mv"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "mv: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# rmdir - remove empty directories (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "rmdir"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "rmdir"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "rmdir: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# touch - create/update files (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "touch"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "touch"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "touch: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# trash - macOS trash command (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "trash"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "trash"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "trash: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# wc - word count (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "wc"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "wc"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "wc: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# test / [ operands: only file tests name paths. String tests (-n, -z, =,
+# !=, -eq, ...) compare values and read nothing, so "$X" there is fine.
+# The parser lists every file-test operand in order as test_paths.
+test_operands_safe if {
+	every path in input.parsed.test_paths {
+		helpers.is_safe_path(path)
+	}
+}
+
+# test - shell built-in for file/string tests (file operands must be safe)
+decisions[decision] if {
+	input.parsed.executable == "test"
+	test_operands_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "test"
+	not test_operands_safe
+	decision := {
+		"action": "deny",
+		"reason": "test: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# [ - alias for test command (file operands must be safe)
+decisions[decision] if {
+	input.parsed.executable == "["
+	test_operands_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "["
+	not test_operands_safe
+	decision := {
+		"action": "deny",
+		"reason": "[: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# tree - visualize directory structure (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "tree"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "tree"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "tree: Only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp).",
+	}
+}
+
+# file - identify file type (safe paths required)
+decisions[decision] if {
+	input.parsed.executable == "file"
+	all_args_and_options_safe
+	decision := {"action": "allow"}
+}
+
+decisions[decision] if {
+	input.parsed.executable == "file"
+	not all_args_and_options_safe
+	decision := {
+		"action": "deny",
+		"reason": "file: only workspace-relative paths are allowed (no absolute paths, no ../, no /tmp)",
+	}
+}
+
+# rm - always denied, use trash instead
+decisions[decision] if {
+	input.parsed.executable == "rm"
+	decision := {
+		"action": "deny",
+		"reason": "The rm command is not allowed. Always use trash instead. The macOS trash command safely moves files to Trash.",
+	}
+}

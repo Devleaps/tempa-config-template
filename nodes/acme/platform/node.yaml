@@ -1,0 +1,15 @@
+kind: team
+id: platform
+name: Platform
+# Back-end services, data and deployment. The default team (default_node in tenant.yaml).
+# Replace the example repos with your own; a repo no node lists falls back to the default node.
+repos:
+  - github.com/your-org/api
+  - github.com/your-org/gitops
+  - github.com/your-org/infrastructure
+# groups:
+#   - { id: 00000000-0000-0000-0000-000000000000, role: developer, default: true } # the team's developers
+#   - { id: 00000000-0000-0000-0000-000000000000, role: team_lead }
+settings:
+  standards: { mode: extendable, add: [python-fastapi, nextjs, postgres, gitops-deployment] }
+  policies: { mode: locked, bundles: [python_uv] }

@@ -1,0 +1,12 @@
+kind: team
+id: web
+name: Web
+# Front-end work: websites and web apps. No Python policies.
+repos:
+  - github.com/your-org/website
+  - github.com/your-org/web-app
+# groups:
+#   - { id: 00000000-0000-0000-0000-000000000000, role: developer }
+#   - { id: 00000000-0000-0000-0000-000000000000, role: team_lead }
+settings:
+  standards: { mode: extendable, add: [nextjs] }
